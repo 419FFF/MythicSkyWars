@@ -35,17 +35,32 @@ public class PlayerJoinListener implements Listener {
             player.kickPlayer(ChatColor.RED + "Data import is running. Please reconnect after it finishes.");
             return;
         }
-        FeatherClientBridge.onJoin(player);
-        LabyModBridge.onJoin(player);
+        try {
+            FeatherClientBridge.onJoin(player);
+        } catch (Throwable ex) {
+            MythicSkywars.get().getLogger().log(Level.WARNING, "Feather join hook failed for " + player.getName() + ": " + ex.getMessage());
+        }
+        try {
+            LabyModBridge.onJoin(player);
+        } catch (Throwable ex) {
+            MythicSkywars.get().getLogger().log(Level.WARNING, "LabyMod join hook failed for " + player.getName() + ": " + ex.getMessage());
+        }
 
         new BukkitRunnable() {
             @Override
             public void run() {
+                if (!player.isOnline()) {
+                    return;
+                }
                 if (MythicSkywars.getCfg().getSpawn() != null && MythicSkywars.getCfg().teleportOnJoin()) {
                     player.teleport(MythicSkywars.getCfg().getSpawn());
                 }
                 // Self-heal stale arena tracking immediately on join so lobby items/portal/protection work.
                 MatchManager.get().getPlayerMapSafe(player);
+                PlayerStat stats = PlayerStat.getPlayerStats(player);
+                if (stats != null) {
+                    stats.updatePlayerIfInLobby(player);
+                }
             }
         }.runTaskLater(MythicSkywars.get(), 1);
 
@@ -102,7 +117,7 @@ public class PlayerJoinListener implements Listener {
         Bukkit.getLogger().log(Level.WARNING, "Trying to let " + player.getName() + " join a game");
 
         boolean joined = MatchManager.get().joinGame(player, GameType.ALL) != null;
-        if (joined) return true;
+        if (joined || MatchManager.get().isJoinPending(player.getUniqueId())) return true;
 
         Bukkit.getLogger().log(Level.WARNING, "Failed to put " + player.getName() + " in a game");
         if (MythicSkywars.getCfg().debugEnabled()) {

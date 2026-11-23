@@ -83,24 +83,19 @@ public class SWJoinCmd extends systems.mythical.mythicskywars.commands.BaseCmd {
             return true;
         }
 
-        // Wait for stats — previously this was misreported as "busy" and could soft-lock joins.
+        // A member already in a match still blocks the party. Stats that are still loading
+        // are queued by joinGame and finish on their own.
         if (party != null) {
             for (UUID memberId : party.getMembers()) {
-                if (!Util.get().isStatsReady(memberId)) {
-                    player.sendMessage(new Messaging.MessageFormatter().format("error.send-stats-not-loaded"));
-                    return true;
+                Player member = Bukkit.getPlayer(memberId);
+                if (member == null) {
+                    continue;
                 }
                 if (Util.get().isBusy(memberId)) {
-                    Player member = Bukkit.getPlayer(memberId);
-                    if (member != null) {
-                        party.sendPartyMessage(new Messaging.MessageFormatter().setVariable("player", member.getName()).format("party.memberbusy"));
-                    }
+                    party.sendPartyMessage(new Messaging.MessageFormatter().setVariable("player", member.getName()).format("party.memberbusy"));
                     return true;
                 }
             }
-        } else if (!Util.get().isStatsReady(player.getUniqueId())) {
-            player.sendMessage(new Messaging.MessageFormatter().format("error.send-stats-not-loaded"));
-            return true;
         }
 
         if (mapName != null) {
@@ -110,7 +105,7 @@ public class SWJoinCmd extends systems.mythical.mythicskywars.commands.BaseCmd {
             } else {
                 joined = MatchManager.get().joinGame(player, type, mapName, luckyMode);
             }
-            if (joined == null) {
+            if (joined == null && !MatchManager.get().isJoinPending(player.getUniqueId())) {
                 player.sendMessage(new Messaging.MessageFormatter()
                         .setVariable("map", mapName)
                         .format("error.join-map-failed"));
@@ -135,7 +130,7 @@ public class SWJoinCmd extends systems.mythical.mythicskywars.commands.BaseCmd {
             }
         }
         if (joinedMap == null) {
-            player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join"));
+            MatchManager.get().sendJoinFailed(player, "error.could-not-join");
         }
         return true;
     }

@@ -77,6 +77,10 @@ permissions:
       sw.spectate: true
       sw.updatetop: true
       sw.migrateusw: true
+      sw.bypasslobbyslots: true
+  sw.bypasslobbyslots:
+    description: Toggle creative lobby building and inventory access with /sw lobbybuild.
+    default: op
   sw.maps:
     description: Allows a player to use all map commands.
     default: op

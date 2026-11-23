@@ -33,19 +33,9 @@ public class FileWorldManager implements WorldManager {
             deleteWorld(migratedDir);
         }
 
-        // Delete level.dat from the copied world folder before loading.
-        // Old map templates may contain deprecated/invalid game rules (e.g. gameLoopFunction, 
-        // randomTickSpeed stored as "false") that cause Paper warnings during world creation.
-        // Removing level.dat forces the server to generate a fresh one with valid defaults.
-        File worldFolder = getWorldFolder(worldName);
-        File levelDat = new File(worldFolder, "level.dat");
-        if (levelDat.exists()) {
-            levelDat.delete();
-        }
-        File levelDatOld = new File(worldFolder, "level.dat_old");
-        if (levelDatOld.exists()) {
-            levelDatOld.delete();
-        }
+        // Same files BedWars deletes before createWorld. A copied uid.dat makes CraftServer
+        // refuse the world as a duplicate, and a leftover session.lock blocks the reload.
+        deleteWorldTrash(worldName);
 
         WorldCreator worldCreator = new WorldCreator(worldName);
         worldCreator.environment(environment);
@@ -60,7 +50,7 @@ public class FileWorldManager implements WorldManager {
         world.setStorm(false);
         world.setThundering(false);
         world.setWeatherDuration(Integer.MAX_VALUE);
-        world.setKeepSpawnInMemory(false);
+        world.setKeepSpawnInMemory(true);
         world.setTicksPerAnimalSpawns(1);
         world.setTicksPerMonsterSpawns(1);
         world.setAutoSave(!readOnly);
@@ -90,7 +80,24 @@ public class FileWorldManager implements WorldManager {
             for (Player p : world.getPlayers()) {
                 p.teleport(MythicSkywars.getCfg().getSpawn());
             }
-            MythicSkywars.get().getServer().unloadWorld(world, save);
+            if (MythicSkywars.get().getServer().unloadWorld(world, save)) {
+                MythicSkywars.getNMS().finishWorldUnload(world);
+            }
+        }
+    }
+
+    /**
+     * Deletes the session files BedWars removes before {@code createWorld}.
+     * level.dat is included so a copied map does not keep stale game rules.
+     */
+    private void deleteWorldTrash(String worldName) {
+        File folder = getWorldFolder(worldName);
+        String[] names = new String[]{"level.dat", "level.dat_mcr", "level.dat_old", "session.lock", "uid.dat"};
+        for (String name : names) {
+            File file = new File(folder, name);
+            if (file.exists() && !file.delete()) {
+                MythicSkywars.get().getLogger().warning("Could not delete " + file.getPath());
+            }
         }
     }
 

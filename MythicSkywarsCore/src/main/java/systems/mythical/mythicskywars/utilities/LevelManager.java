@@ -26,7 +26,7 @@ public final class LevelManager {
     private final Map<Integer, String> prefixByLevel = new HashMap<>();
     private final Map<Integer, Integer> rankupCostByLevel = new HashMap<>();
     private final Map<Integer, List<String>> levelRewards = new HashMap<>();
-    private String progressSymbol = "■";
+    private String progressSymbol = "█";
     private String progressUnlockedColor = "&b";
     private String progressLockedColor = "&7";
     private String progressFormat = "&8 [{progress}&8]";
@@ -248,11 +248,17 @@ public final class LevelManager {
         int pct = getProgressPercent(xp);
         int unlocked = Math.min(progressSegments, Math.max(0, (int) Math.round((pct / 100.0D) * progressSegments)));
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < progressSegments; i++) {
-            if (i < unlocked) {
-                sb.append(progressUnlockedColor).append(progressSymbol);
-            } else {
-                sb.append(progressLockedColor).append(progressSymbol);
+        if (unlocked > 0) {
+            sb.append(progressUnlockedColor);
+            for (int i = 0; i < unlocked; i++) {
+                sb.append(progressSymbol);
+            }
+        }
+        int locked = progressSegments - unlocked;
+        if (locked > 0) {
+            sb.append(progressLockedColor);
+            for (int i = 0; i < locked; i++) {
+                sb.append(progressSymbol);
             }
         }
         String built = progressFormat.replace("{progress}", sb.toString());

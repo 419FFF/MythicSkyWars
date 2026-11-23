@@ -246,7 +246,7 @@ public class LobbyWaterPortalManager {
                 continue;
             }
             GameMap joinedMap = MatchManager.get().joinGame(player, portal.type, portal.luckyMode, false);
-            if (joinedMap != null) {
+            if (joinedMap != null || MatchManager.get().isJoinPending(player.getUniqueId())) {
                 playerCooldown.put(player.getUniqueId(), now);
                 return;
             }
@@ -273,7 +273,7 @@ public class LobbyWaterPortalManager {
                     GameMap retryMap = MatchManager.get().joinGame(player, portal.type, portal.luckyMode, false);
                     playerCooldown.put(player.getUniqueId(), System.currentTimeMillis());
                     if (retryMap == null) {
-                        player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join"));
+                        MatchManager.get().sendJoinFailed(player, "error.could-not-join");
                     }
                 }
             }, JOIN_RETRY_TICKS);

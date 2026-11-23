@@ -453,6 +453,13 @@ public class GameMap {
             }
             return false;
         }
+        if (MatchManager.get().queueJoinUntilStatsReady(playerId, Collections.singletonList(playerId), () -> {
+            if (player.isOnline() && !addPlayers(teamToTry, player) && !MatchManager.get().isJoinPending(playerId)) {
+                MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
+            }
+        })) {
+            return false;
+        }
         // Stats must be loaded before join (distinct from "busy")
         if (!Util.get().isStatsReady(playerId)) {
             if (MythicSkywars.getCfg().debugEnabled()) {
@@ -503,15 +510,11 @@ public class GameMap {
             }
             if (reservedTeamCard != null) { // If setup for player success
                 result = reservedTeamCard.joinGame(player); // tp to arena
-                if (result) {
-                    PlayerStat.resetScoreboard(player);
-                }
             } else { // Warn console that setup failed
                 MythicSkywars.get().getLogger().warning("Failed to send reservation for " + player.getName());
             }
         // else if in lobby waiting mode
         } else if (getMatchState() == MatchState.WAITINGLOBBY) {
-            PlayerStat.resetScoreboard(player);
             addWaitingPlayer(player);
             getJoinQueue().add(new PlayerCard(null, player.getUniqueId(), null));
             Bukkit.getPluginManager().callEvent(new MythicSkywarsJoinEvent(player, this));
@@ -531,6 +534,23 @@ public class GameMap {
     }
 
     public boolean addPlayers(@Nullable TeamCard teamToTry, final Party party) {
+        if (party == null || party.getLeader() == null) {
+            return false;
+        }
+        if (Bukkit.getPlayer(party.getLeader()) == null) {
+            return false;
+        }
+        if (MatchManager.get().queueJoinUntilStatsReady(party.getLeader(), party.getMembers(), () -> {
+            Player leader = Bukkit.getPlayer(party.getLeader());
+            if (leader == null) {
+                return;
+            }
+            if (!addPlayers(teamToTry, party) && !MatchManager.get().isJoinPending(party.getLeader())) {
+                MatchManager.get().sendJoinFailed(leader, "error.could-not-join2");
+            }
+        })) {
+            return false;
+        }
         TeamCard team = null;
         Map<TeamCard, ArrayList<Player>> players = new HashMap<>();
         if (teamSize == 1) {

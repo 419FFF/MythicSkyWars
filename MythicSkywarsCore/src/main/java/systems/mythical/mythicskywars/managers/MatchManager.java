@@ -48,6 +48,24 @@ public class MatchManager {
     //private String debugName;
     private boolean debug;
 
+    /**
+     * Joins requested before player stats have finished loading. One pending action per owner.
+     * Kept static so a recreated MatchManager does not drop a join that is already queued.
+     */
+    private static final List<DeferredJoin> deferredJoins = new ArrayList<DeferredJoin>();
+
+    private static final class DeferredJoin {
+        private final UUID owner;
+        private final Set<UUID> waitingFor;
+        private final Runnable action;
+
+        private DeferredJoin(UUID owner, Set<UUID> waitingFor, Runnable action) {
+            this.owner = owner;
+            this.waitingFor = waitingFor;
+            this.action = action;
+        }
+    }
+
     public MatchManager() {
         debug = MythicSkywars.getCfg().debugEnabled();
         instance = this;
@@ -84,9 +102,19 @@ public class MatchManager {
     }
 
     public GameMap joinGame(Player player, GameType type, boolean luckyMode, boolean allowSpectatorBypassOnFailure) {
+        if (player == null) {
+            return null;
+        }
         GameMap currentMap = getPlayerMap(player);
         if (currentMap != null) {
             return currentMap;
+        }
+        if (queueJoinUntilStatsReady(player.getUniqueId(), Collections.singletonList(player.getUniqueId()), () -> {
+            if (joinGame(player, type, luckyMode, allowSpectatorBypassOnFailure) == null) {
+                sendJoinFailed(player, "error.could-not-join");
+            }
+        })) {
+            return null;
         }
 
         ArrayList<GameMap> games = MythicSkywars.getGameMapMgr().getPlayableArenas(type);
@@ -139,6 +167,9 @@ public class MatchManager {
 
     @Nullable
     public GameMap joinGame(Player player, GameType type, String mapName, boolean luckyMode) {
+        if (player == null) {
+            return null;
+        }
         GameMap currentMap = getPlayerMap(player);
         if (currentMap != null) {
             return currentMap;
@@ -146,6 +177,17 @@ public class MatchManager {
 
         if (mapName == null || mapName.trim().isEmpty()) {
             return joinGame(player, type, luckyMode, true);
+        }
+        final String requestedMap = mapName;
+        if (queueJoinUntilStatsReady(player.getUniqueId(), Collections.singletonList(player.getUniqueId()), () -> {
+            if (joinGame(player, type, requestedMap, luckyMode) == null && player.isOnline()
+                    && !isJoinPending(player.getUniqueId())) {
+                player.sendMessage(new Messaging.MessageFormatter()
+                        .setVariable("map", requestedMap)
+                        .format("error.join-map-failed"));
+            }
+        })) {
+            return null;
         }
         String token = ChatColor.stripColor(mapName).trim();
         GameMap map = MythicSkywars.getGameMapMgr().getMap(token);
@@ -186,8 +228,28 @@ public class MatchManager {
 
     @Nullable
     public GameMap joinGame(Party party, GameType type, String mapName, boolean luckyMode) {
+        if (party == null || party.getLeader() == null) {
+            return null;
+        }
         if (mapName == null || mapName.trim().isEmpty()) {
             return joinGame(party, type, luckyMode);
+        }
+        if (Bukkit.getPlayer(party.getLeader()) == null) {
+            return null;
+        }
+        final String requestedMap = mapName;
+        if (queueJoinUntilStatsReady(party.getLeader(), party.getMembers(), () -> {
+            Player leader = Bukkit.getPlayer(party.getLeader());
+            if (leader == null) {
+                return;
+            }
+            if (joinGame(party, type, requestedMap, luckyMode) == null && !isJoinPending(party.getLeader())) {
+                leader.sendMessage(new Messaging.MessageFormatter()
+                        .setVariable("map", requestedMap)
+                        .format("error.join-map-failed"));
+            }
+        })) {
+            return null;
         }
         String token = ChatColor.stripColor(mapName).trim();
         GameMap map = MythicSkywars.getGameMapMgr().getMap(token);
@@ -293,6 +355,24 @@ public class MatchManager {
     }
 
     public GameMap joinGame(Party party, GameType type, boolean luckyMode) {
+        if (party == null || party.getLeader() == null) {
+            return null;
+        }
+        if (Bukkit.getPlayer(party.getLeader()) == null) {
+            return null;
+        }
+        if (queueJoinUntilStatsReady(party.getLeader(), party.getMembers(), () -> {
+            Player leader = Bukkit.getPlayer(party.getLeader());
+            if (leader == null) {
+                return;
+            }
+            if (joinGame(party, type, luckyMode) == null) {
+                sendJoinFailed(leader, "error.could-not-join");
+            }
+        })) {
+            return null;
+        }
+
         ArrayList<GameMap> games;
         if (type == GameType.ALL) {
             games = MythicSkywars.getGameMapMgr().getPlayableArenas(GameType.ALL);
@@ -340,6 +420,125 @@ public class MatchManager {
             return true;
         }
         return gameMap.isLuckyModeEnabled() == luckyMode;
+    }
+
+    public boolean isJoinPending(UUID uuid) {
+        if (uuid == null) {
+            return false;
+        }
+        synchronized (deferredJoins) {
+            for (DeferredJoin join : deferredJoins) {
+                if (uuid.equals(join.owner) || join.waitingFor.contains(uuid)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Drops a queued join when the owner or someone it is waiting on disconnects. */
+    public void clearDeferredJoins(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        synchronized (deferredJoins) {
+            deferredJoins.removeIf(join -> uuid.equals(join.owner) || join.waitingFor.contains(uuid));
+        }
+    }
+
+    /**
+     * Runs queued joins whose online players now have stats. Offline members are skipped.
+     * Actions run outside the lock so a join cannot re-enter this method while it is held.
+     */
+    public void onStatsReady(UUID uuid) {
+        List<Runnable> ready = new ArrayList<Runnable>();
+        synchronized (deferredJoins) {
+            Iterator<DeferredJoin> it = deferredJoins.iterator();
+            while (it.hasNext()) {
+                DeferredJoin join = it.next();
+                Player owner = Bukkit.getPlayer(join.owner);
+                if (owner == null || !owner.isOnline()) {
+                    it.remove();
+                    continue;
+                }
+                if (deferredJoinReady(join)) {
+                    it.remove();
+                    ready.add(join.action);
+                }
+            }
+        }
+        for (Runnable action : ready) {
+            try {
+                action.run();
+            } catch (Exception ex) {
+                MythicSkywars.get().getLogger().warning("Queued SkyWars join failed: " + ex.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Queues {@code retry} when any online player in {@code ids} is still loading stats.
+     * @return true when the join was queued and the caller should stop
+     */
+    public boolean queueJoinUntilStatsReady(UUID owner, Collection<UUID> ids, Runnable retry) {
+        if (owner == null || ids == null || retry == null) {
+            return false;
+        }
+        List<UUID> waiting = new ArrayList<UUID>();
+        for (UUID id : ids) {
+            if (id == null) {
+                continue;
+            }
+            Player online = Bukkit.getPlayer(id);
+            if (online == null || !online.isOnline()) {
+                continue;
+            }
+            if (!Util.get().isStatsReady(id)) {
+                waiting.add(id);
+            }
+        }
+        if (waiting.isEmpty()) {
+            return false;
+        }
+        deferJoin(owner, waiting, retry);
+        return true;
+    }
+
+    /**
+     * Sends a join-failure message unless this player is only waiting on their stats.
+     * @return true when the message was sent
+     */
+    public boolean sendJoinFailed(Player player, String messageKey) {
+        if (player == null || isJoinPending(player.getUniqueId())) {
+            return false;
+        }
+        player.sendMessage(new Messaging.MessageFormatter().format(messageKey));
+        return true;
+    }
+
+    private boolean deferredJoinReady(DeferredJoin join) {
+        Player owner = Bukkit.getPlayer(join.owner);
+        if (owner == null || !owner.isOnline()) {
+            return false;
+        }
+        for (UUID id : join.waitingFor) {
+            Player online = Bukkit.getPlayer(id);
+            if (online == null || !online.isOnline()) {
+                continue;
+            }
+            PlayerStat stats = PlayerStat.getPlayerStats(id);
+            if (stats == null || !stats.isInitialized()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void deferJoin(UUID owner, Collection<UUID> waitingFor, Runnable action) {
+        synchronized (deferredJoins) {
+            deferredJoins.removeIf(join -> owner.equals(join.owner));
+            deferredJoins.add(new DeferredJoin(owner, new HashSet<UUID>(waitingFor), action));
+        }
     }
 
     public void start(final GameMap gameMap) {

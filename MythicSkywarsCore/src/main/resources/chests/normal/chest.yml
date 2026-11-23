@@ -1,9 +1,9 @@
 chestItems:
-  '85':
+  '68':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_SWORD
-  '60':
+  '48':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_BOOTS
@@ -21,22 +21,19 @@ chestItems:
           PROTECTION_ENVIRONMENTAL: 1
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_HELMET
-  '50':
+  '32':
+    items:
+    - ==: org.bukkit.inventory.ItemStack
+      type: IRON_LEGGINGS
+  '28':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: WOOD
-      amount: 25
+      amount: 15
     - ==: org.bukkit.inventory.ItemStack
       type: STONE
-      amount: 22
-  '40':
-    items:
-    - ==: org.bukkit.inventory.ItemStack
-      type: STONE
-      amount: 12
-    - ==: org.bukkit.inventory.ItemStack
-      type: IRON_LEGGINGS
-  '30':
+      amount: 13
+  '24':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_SWORD
@@ -45,7 +42,12 @@ chestItems:
         meta-type: UNSPECIFIC
         enchants:
           DAMAGE_ALL: 1
-  '25':
+  '22':
+    items:
+    - ==: org.bukkit.inventory.ItemStack
+      type: STONE
+      amount: 7
+  '20':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: GOLDEN_APPLE
@@ -58,11 +60,11 @@ chestItems:
       type: DIAMOND_CHESTPLATE
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_HELMET
-  '20':
+  '16':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_PICKAXE
-  '15':
+  '12':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_AXE
@@ -73,16 +75,16 @@ chestItems:
           DIG_SPEED: 1
     - ==: org.bukkit.inventory.ItemStack
       type: ARROW
-      amount: 6
-  '10':
+      amount: 5
+  '8':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: GRILLED_PORK
-      amount: 11
+      amount: 9
     - ==: org.bukkit.inventory.ItemStack
       type: COOKED_BEEF
-      amount: 8
-  '5':
+      amount: 6
+  '4':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: FISHING_ROD
@@ -94,7 +96,7 @@ chestItems:
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: EGG
-      amount: 4
+      amount: 3
   '1':
     items:
     - ==: org.bukkit.inventory.ItemStack

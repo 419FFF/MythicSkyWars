@@ -23,80 +23,107 @@ public class MythicSkywarsBoard {
 
     public MythicSkywarsBoard(Player player, int lineCount) {
         this.player = player;
+        // 1.8 hides a score of 0, and only the 16 real colors are safe team entries.
+        // Format codes after those colors make the client drop the sidebar.
+        if (lineCount < 1) {
+            lineCount = 1;
+        }
+        if (lineCount > 15) {
+            lineCount = 15;
+        }
         this.lineCount = lineCount;
         this.board = MythicSkywars.get().getServer().getScoreboardManager().getNewScoreboard();
-        this.objective = this.board.registerNewObjective("sb1", "sb2");
+        this.objective = this.board.registerNewObjective("sb1", "dummy");
         this.objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         this.objective.setDisplayName("...");
 
         int score = lineCount;
         for (int i = 0; i < lineCount; i++) {
-            Team t = this.board.registerNewTeam(i + "");
-            t.addEntry(ChatColor.values()[i] + "");
-            this.objective.getScore(ChatColor.values()[i] + "").setScore(score);
+            Team t = this.board.registerNewTeam(Integer.toString(i));
+            String entry = ChatColor.values()[i].toString();
+            t.addEntry(entry);
+            this.objective.getScore(entry).setScore(score);
             score--;
         }
         this.player.setScoreboard(this.board);
     }
 
-    public void setTitle(String arg0) {
-        if (arg0 == null) arg0 = "";
+    public void setTitle(String title) {
+        if (title == null) {
+            title = "";
+        }
+        if (title.length() > 32) {
+            title = title.substring(0, 32);
+        }
+        title = stripTrailingSection(title);
 
-        if (cache.containsKey(-1) && cache.get(-1).equals(arg0)) return;
-        cache.remove(-1);
-        cache.put(-1, arg0);
-        objective.setDisplayName(arg0);
+        if (cache.containsKey(-1) && cache.get(-1).equals(title)) return;
+        cache.put(-1, title);
+        objective.setDisplayName(title);
     }
 
-    public void setLine(int arg0, String arg1) {
-        Team arg2 = board.getTeam(arg0 + "");
-        if (arg1 == null) arg1 = "";
-
-        if (arg1.contains("%") && Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            arg1 = PlaceholderAPI.setPlaceholders(player, arg1);
+    public void setLine(int line, String text) {
+        Team team = board.getTeam(Integer.toString(line));
+        if (team == null) {
+            return;
+        }
+        if (text == null) {
+            text = "";
         }
 
-        if (cache.containsKey(arg0) && cache.get(arg0).equals(arg1)) return;
-        cache.remove(arg0);
-        cache.put(arg0, arg1);
-
-        ArrayList<String> arg3;
-        if (MythicSkywars.getNMS().getVersion() > 12) arg3 = convertIntoPieces(arg1, 64);
-        else arg3 = convertIntoPieces(arg1, 16);
-
-        arg2.setPrefix(fixIssues(arg3.get(0)));
-        arg2.setSuffix(fixIssues(arg3.get(1)));
-    }
-
-    private String fixIssues(String arg0) {
-        return arg0;
-    }
-
-    private ArrayList<String> convertIntoPieces(String arg0, int arg1) {
-        ArrayList<String> arg2 = new ArrayList<>();
-
-        if (arg0.length() <= arg1) {
-            arg2.add(arg0);
-            arg2.add("");
-        } else {
-            if (!ChatColor.getLastColors(arg0.substring(arg1 - 2, arg1)).equals("")) {
-                arg2.add(arg0.substring(0, arg1 - 2));
-                arg2.add(arg0.substring(arg1 - 2));
-            } else if (!ChatColor.getLastColors(arg0.substring(arg1 - 1, arg1 + 1)).equals("")) {
-                arg2.add(arg0.substring(0, arg1 - 1));
-                arg2.add(arg0.substring(arg1 - 1));
-            } else {
-                arg2.add(arg0.substring(0, arg1));
-                String arg3 = ChatColor.getLastColors(arg2.get(0));
-                arg2.add(arg3 + arg0.substring(arg1));
-            }
-
-            if (arg2.get(1).length() > arg1) {
-                arg2.set(1, arg2.get(1).substring(0, arg1));
-            }
+        if (text.contains("%") && Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            text = PlaceholderAPI.setPlaceholders(player, text);
         }
 
-        return arg2;
+        if (cache.containsKey(line) && cache.get(line).equals(text)) return;
+        cache.put(line, text);
+
+        int limit = MythicSkywars.getNMS().getVersion() > 12 ? 64 : 16;
+        ArrayList<String> pieces = convertIntoPieces(text, limit);
+        team.setPrefix(pieces.get(0));
+        team.setSuffix(pieces.get(1));
+    }
+
+    /**
+     * Splits a sidebar line into a prefix and suffix. A piece that ends in a lone
+     * section sign makes the 1.8 client drop the whole sidebar.
+     */
+    private ArrayList<String> convertIntoPieces(String text, int limit) {
+        ArrayList<String> pieces = new ArrayList<String>();
+        if (text == null) {
+            text = "";
+        }
+        if (limit < 1) {
+            limit = 16;
+        }
+        if (text.length() <= limit) {
+            pieces.add(stripTrailingSection(text));
+            pieces.add("");
+            return pieces;
+        }
+
+        String prefix = stripTrailingSection(text.substring(0, limit));
+        String colors = ChatColor.getLastColors(prefix);
+        String suffix = colors + text.substring(prefix.length());
+        if (suffix.length() > limit) {
+            suffix = suffix.substring(0, limit);
+        }
+        pieces.add(prefix);
+        pieces.add(stripTrailingSection(suffix));
+        return pieces;
+    }
+
+    private static String stripTrailingSection(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        while (text.endsWith("\u00A7")) {
+            text = text.substring(0, text.length() - 1);
+            if (text.isEmpty()) {
+                return "";
+            }
+        }
+        return text;
     }
 
     public int getLinecount() {

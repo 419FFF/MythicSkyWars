@@ -62,6 +62,11 @@ public class PlayerTeleportListener implements org.bukkit.event.Listener {
 
                 // Leaving spawn world
                 if (wasInSpawnWorld && !isGoingToSpawnWorld) {
+                    // Arena teleports can happen before match membership is visible.
+                    // An empty scoreboard here is what makes the sidebar disappear.
+                    if (isArenaWorld(event.getTo().getWorld())) {
+                        return;
+                    }
                     if (MythicSkywars.getCfg().lobbyBoardEnabled()) {
                         MythicSkywars.getNMS().removeFromScoreboardCollection(player.getScoreboard());//for 1.13+
                         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
@@ -175,5 +180,24 @@ public class PlayerTeleportListener implements org.bukkit.event.Listener {
         synchronized (cooldownsLock) {
             return cooldowns.contains(p);
         }
+    }
+
+    private static boolean isArenaWorld(World world) {
+        if (world == null) {
+            return false;
+        }
+        for (GameMap map : MythicSkywars.getGameMapMgr().getMapsCopy()) {
+            if (map == null) {
+                continue;
+            }
+            World current = map.getCurrentWorld();
+            if (current != null && current.equals(world)) {
+                return true;
+            }
+            if (map.getName() != null && map.getName().equalsIgnoreCase(world.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

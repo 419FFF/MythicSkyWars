@@ -1,15 +1,10 @@
 chestItems:
-  '45':
+  '25':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: WOOD
-      amount: 24
-  '35':
-    items:
-    - ==: org.bukkit.inventory.ItemStack
-      type: STONE
-      amount: 34
-  '25':
+      amount: 14
+  '20':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_SWORD
@@ -21,11 +16,16 @@ chestItems:
       type: IRON_HELMET
     - ==: org.bukkit.inventory.ItemStack
       type: GRILLED_PORK
-      amount: 3
+      amount: 2
     - ==: org.bukkit.inventory.ItemStack
       type: COOKED_BEEF
-      amount: 3
-  '20':
+      amount: 2
+  '19':
+    items:
+    - ==: org.bukkit.inventory.ItemStack
+      type: STONE
+      amount: 20
+  '16':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_CHESTPLATE
@@ -35,7 +35,7 @@ chestItems:
       type: IRON_BOOTS
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_CHESTPLATE
-  '10':
+  '8':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_HELMET
@@ -53,7 +53,7 @@ chestItems:
         meta-type: UNSPECIFIC
         enchants:
           DAMAGE_ALL: 1
-  '5':
+  '4':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_PICKAXE
@@ -64,12 +64,10 @@ chestItems:
           DIG_SPEED: 4
     - ==: org.bukkit.inventory.ItemStack
       type: WATER_BUCKET
-  '3':
+  '2':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: FISHING_ROD
-  '2':
-    items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_AXE
       meta:
@@ -86,10 +84,10 @@ chestItems:
           DIG_SPEED: 2
     - ==: org.bukkit.inventory.ItemStack
       type: ARROW
-      amount: 8
+      amount: 6
     - ==: org.bukkit.inventory.ItemStack
       type: EGG
-      amount: 4
+      amount: 3
   '1':
     items:
     - ==: org.bukkit.inventory.ItemStack

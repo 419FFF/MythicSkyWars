@@ -87,9 +87,9 @@ command:
     \"killsound\", or \"winsound\""
   hologram-removed: "&cThe nearest hologram has been removed!"
   hologram-created: "&aYou successfully created a &b%type% %format% &ahologram!"
-  bypass-lobby-slots-enabled: "&aLobby slot bypass enabled. You can now move items
-    and build/place in lobby."
-  bypass-lobby-slots-disabled: "&eLobby slot bypass disabled."
+  lobby-build-lobby-only: "&cYou can only toggle lobby build mode in the lobby, outside a match."
+  bypass-lobby-slots-enabled: "&aLobby build mode enabled (creative). Build and take items from creative. Use /sw lobbybuild to disable."
+  bypass-lobby-slots-disabled: "&eLobby build mode disabled."
   lobbywaterportal:
     unavailable: "&cLobby water portal manager is not available."
     usage-header: "&6Lobby water portal commands:"
@@ -940,7 +940,7 @@ helpList:
       at your eye location"
     holoremove: "&a/sw holoremove &e- &2Removes the closest hologram leaderboard"
     lobby: "&a/sw lobby &e- &2Teleport to Skywars lobby"
-    bypasslobbyslots: "&a/sw bypassLobbySlots &e- &2Toggle lobby slot/build bypass for yourself"
+    bypasslobbyslots: "&a/sw lobbybuild &e- &2Toggle creative lobby building and inventory access"
     lobbywaterportal: "&a/sw lobbywaterportal &e- &2Manage lobby water auto-join portals"
     lobbywaterportla: "&a/sw lobbywaterportal &e- &2Manage lobby water auto-join portals"
     soulwell: "&a/sw soulwell &e(setwell|holo|info|clear) &e- &2Set Soul Well

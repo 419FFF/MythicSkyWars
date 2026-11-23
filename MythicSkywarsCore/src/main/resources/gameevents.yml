@@ -65,6 +65,7 @@ events:
       chance: 20
       announceTimer: true
       repeatable: false
+      title: "Border shrinks in:"
     ProjectilesOnlyEvent:
       enabled: false
       minStart: 120

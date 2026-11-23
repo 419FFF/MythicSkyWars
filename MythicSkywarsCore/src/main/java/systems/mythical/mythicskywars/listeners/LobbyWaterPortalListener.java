@@ -20,6 +20,9 @@ public class LobbyWaterPortalListener implements org.bukkit.event.Listener {
             return;
         }
         Player player = event.getPlayer();
+        if (systems.mythical.mythicskywars.managers.LobbyBypassManager.hasBypass(player)) {
+            return;
+        }
         if (MythicSkywars.getLobbyWaterPortals() != null) {
             MythicSkywars.getLobbyWaterPortals().tryEnterPortal(player);
         }

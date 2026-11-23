@@ -3,7 +3,10 @@ package systems.mythical.mythicskywars.nms.v1_8_R3;
 import systems.mythical.mythicskywars.MythicSkywars;
 import systems.mythical.mythicskywars.game.signs.SWRSign;
 import systems.mythical.mythicskywars.nms.NMS;
+import net.minecraft.server.v1_8_R3.ChunkProviderServer;
+import net.minecraft.server.v1_8_R3.WorldServer;
 import org.bukkit.*;
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.block.Block;
 import org.bukkit.block.Skull;
 import org.bukkit.enchantments.Enchantment;
@@ -23,7 +26,9 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.BlockIterator;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -300,5 +305,71 @@ public class NMSHandler implements NMS {
             }
         }
         return null;
+    }
+
+    @Override
+    public void finishWorldUnload(World world) {
+        if (!(world instanceof CraftWorld)) {
+            return;
+        }
+        WorldServer handle = ((CraftWorld) world).getHandle();
+        releaseWindSpigotTicker(handle, world.getName());
+        ChunkProviderServer provider = handle.chunkProviderServer;
+        if (provider != null && provider.chunkProvider == null) {
+            provider.chunkProvider = EmptyChunkProvider.INSTANCE;
+        }
+    }
+
+    /**
+     * Removes this world's {@code WorldTicker} from the list WindSpigot already snapshotted.
+     * Match the server world itself. Comparing Bukkit world objects misses after unload.
+     */
+    private void releaseWindSpigotTicker(WorldServer handle, String name) {
+        try {
+            Class<?> managerClass = Class.forName("com.windpvp.windspigot.world.WorldTickManager");
+            Object manager = managerClass.getMethod("getInstance").invoke(null);
+            if (manager == null) {
+                return;
+            }
+            Field tickersField = managerClass.getDeclaredField("worldTickers");
+            tickersField.setAccessible(true);
+            Object raw = tickersField.get(manager);
+            if (!(raw instanceof List)) {
+                return;
+            }
+            List<?> tickers = (List<?>) raw;
+            Object direct = null;
+            try {
+                Field tickerField = handle.getClass().getField("ticker");
+                direct = tickerField.get(handle);
+            } catch (NoSuchFieldException ignored) {
+                // Not WindSpigot. The generator stand-in above is unused there too.
+            }
+            boolean removed = false;
+            Iterator<?> it = tickers.iterator();
+            while (it.hasNext()) {
+                Object ticker = it.next();
+                if (ticker == null) {
+                    continue;
+                }
+                if (direct != null && ticker == direct) {
+                    it.remove();
+                    removed = true;
+                    continue;
+                }
+                Field worldField = ticker.getClass().getField("worldserver");
+                if (worldField.get(ticker) == handle) {
+                    it.remove();
+                    removed = true;
+                }
+            }
+            if (direct != null && !removed) {
+                MythicSkywars.get().getLogger().warning("WindSpigot still has a ticker for " + name + " after unload.");
+            }
+        } catch (ClassNotFoundException ignored) {
+            // Not WindSpigot.
+        } catch (Exception ex) {
+            MythicSkywars.get().getLogger().warning("Could not release the WindSpigot ticker for " + name + ": " + ex.getMessage());
+        }
     }
 }

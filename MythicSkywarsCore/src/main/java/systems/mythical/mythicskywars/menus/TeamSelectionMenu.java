@@ -7,6 +7,7 @@ import systems.mythical.mythicskywars.events.MythicSkywarsSelectTeamEvent;
 import systems.mythical.mythicskywars.game.GameMap;
 import systems.mythical.mythicskywars.game.PlayerCard;
 import systems.mythical.mythicskywars.game.TeamCard;
+import systems.mythical.mythicskywars.managers.MatchManager;
 import systems.mythical.mythicskywars.managers.PlayerStat;
 import systems.mythical.mythicskywars.utilities.Messaging;
 import systems.mythical.mythicskywars.utilities.Party;
@@ -159,7 +160,7 @@ public class TeamSelectionMenu {
                         player.closeInventory();
                         joined = gMap.addPlayers(tCard, party);
                         if (!joined) {
-                            player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+                            MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
                         }
                     }
                 } else {

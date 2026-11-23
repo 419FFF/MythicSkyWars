@@ -6,6 +6,7 @@ import systems.mythical.mythicskywars.clients.lunar.LunarLobbyWaterPortalApollo;
 import systems.mythical.mythicskywars.MythicSkywars;
 import systems.mythical.mythicskywars.enums.PlayerRemoveReason;
 import systems.mythical.mythicskywars.game.GameMap;
+import systems.mythical.mythicskywars.managers.MatchManager;
 import systems.mythical.mythicskywars.managers.PlayerStat;
 import systems.mythical.mythicskywars.utilities.Party;
 import org.bukkit.entity.Player;
@@ -22,6 +23,7 @@ public class PlayerQuitListener implements org.bukkit.event.Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         final Player player = event.getPlayer();
         final UUID uuid = player.getUniqueId();
+        MatchManager.get().clearDeferredJoins(uuid);
         try {
             LunarLobbyWaterPortalApollo.onQuit(player);
         } catch (NoClassDefFoundError e) {

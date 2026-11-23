@@ -126,6 +126,7 @@ public class PlayerInteractListener implements Listener {
 
         final GameMap gameMap = MatchManager.get().getPlayerMapSafe(player);
         if (gameMap == null) {
+            if (LobbyBypassManager.hasBypass(player)) return;
             GameMap editorMap = MythicSkywars.getGameMapMgr().getMap(player.getWorld().getName());
             if (editorMap != null && editorMap.isEditing() && event.hasItem()
                     && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
@@ -279,7 +280,7 @@ public class PlayerInteractListener implements Listener {
                                 if (party.getLeader().equals(player.getUniqueId())) {
                                     joined = gMap.addPlayers(null, party);
                                     if (!joined) {
-                                        player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+                                        MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
                                     }
                                 } else {
                                     player.sendMessage(new Messaging.MessageFormatter().format("party.onlyleader"));
@@ -287,7 +288,7 @@ public class PlayerInteractListener implements Listener {
                             } else {
                                 joined = gMap.addPlayers(null, player);
                                 if (!joined) {
-                                    player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+                                    MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
                                 }
                             }
                         }
@@ -421,7 +422,7 @@ public class PlayerInteractListener implements Listener {
                             }
                             MythicSkywars.get().getPlayerManager().removePlayer(player, PlayerRemoveReason.PLAYER_QUIT_GAME, null, false, false);
                             if (MatchManager.get().joinGame(player, gameType, playAgainLucky, true) == null) {
-                                player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+                                MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
                             }
                         }
                     }.runTaskLater(MythicSkywars.get(), 1L);
@@ -596,7 +597,7 @@ public class PlayerInteractListener implements Listener {
                 }
             }
             if (!joined) {
-                player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join"));
+                MatchManager.get().sendJoinFailed(player, "error.could-not-join");
             }
             return;
         }

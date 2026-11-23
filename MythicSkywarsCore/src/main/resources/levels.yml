@@ -10,7 +10,7 @@ xp-rewards:
   vip5-multiplier: 10
 
 progress-bar:
-  symbol: ■
+  symbol: █
   unlocked-color: '&b'
   locked-color: '&7'
   format: '&8 [{progress}&8]'

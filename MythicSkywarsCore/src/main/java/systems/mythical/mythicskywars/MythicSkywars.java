@@ -506,6 +506,9 @@ public class MythicSkywars extends JavaPlugin implements PluginMessageListener {
     }
 
     public void onDisable() {
+        for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+            systems.mythical.mythicskywars.managers.LobbyBypassManager.disable(player);
+        }
         loaded = false;
         try {
             LunarApolloBridge.shutdown();
@@ -696,6 +699,10 @@ public class MythicSkywars extends JavaPlugin implements PluginMessageListener {
                 }
             }.runTaskTimer(MythicSkywars.get(), 0, 40);
         }
+        systems.mythical.mythicskywars.addons.AddonManager addonManager = new systems.mythical.mythicskywars.addons.AddonManager(this);
+        addonManager.register(new systems.mythical.mythicskywars.addons.SkywarsAchievements());
+        addonManager.loadJars();
+
         loaded = true;
 
         // Start update checker

@@ -120,4 +120,11 @@ public interface NMS {
      */
     Enchantment getEnchantmentByName(String... names);
 
+    /**
+     * Runs after {@code unloadWorld} returns true.
+     * WindSpigot 2.1.4 keeps the world on the ticker list it built before plugin tasks,
+     * then crashes when that tick calls the generator it just cleared.
+     */
+    void finishWorldUnload(World world);
+
 }

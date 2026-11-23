@@ -91,89 +91,120 @@ public class PlayerStat {
     }
 
     public void updatePlayerIfInLobby(Player player) {
-        if (MythicSkywars.getCfg().getSpawn() != null) {
-            if (player.getWorld().equals(MythicSkywars.getCfg().getSpawn().getWorld())) {
-                updatePlayer(uuid);
-            }
+        if (player == null || MythicSkywars.getCfg().getSpawn() == null) {
+            return;
+        }
+        if (!player.getWorld().equals(MythicSkywars.getCfg().getSpawn().getWorld())) {
+            return;
+        }
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(MythicSkywars.get(), () -> updatePlayerIfInLobby(player));
+            return;
+        }
+        if (isInitialized()) {
+            applyLobbyJoinState(player);
+        } else {
+            updatePlayer(uuid);
         }
     }
 
     public void loadStats(Runnable postLoadStatsTask) {
         DataStorage.get().loadStats(this, () -> {
             this.setInitialized(true);
+            Player player = null;
+            try {
+                player = Bukkit.getPlayer(UUID.fromString(this.uuid));
+            } catch (IllegalArgumentException ignored) {
+            }
+            if (player != null && player.isOnline()) {
+                updatePlayerIfInLobby(player);
+            }
+            try {
+                MatchManager.get().onStatsReady(UUID.fromString(this.uuid));
+            } catch (Exception ex) {
+                MythicSkywars.get().getLogger().warning("Could not finish a queued SkyWars join for " + playername + ": " + ex.getMessage());
+            }
             if (postLoadStatsTask != null) postLoadStatsTask.run();
         });
     }
 
     public static void updatePlayer(final String uuid) {
-        new BukkitRunnable() {
-            public void run() {
-                PlayerStat ps = PlayerStat.getPlayerStats(uuid);
-                if (ps == null) {
-                    this.cancel();
-                } else if (ps.isInitialized()) {
-                    final Player player = MythicSkywars.get().getServer().getPlayer(UUID.fromString(uuid));
-                    if (player != null) {
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (Util.get().isSpawnWorld(player.getWorld())) {
-                                    MatchManager mm = MatchManager.get();
-                                    if (mm.getPlayerMap(player) != null || mm.getSpectatorMap(player) != null) {
-                                        return;
-                                    }
-                                    if (MythicSkywars.getCfg().isClearInventoryOnLobbyJoin()) {
-                                        player.getInventory().clear();
-                                    }
-                                    if (MythicSkywars.getCfg().protectLobby()) {
-                                        player.setGameMode(GameMode.ADVENTURE);
-                                        player.setHealth(20);
-                                        player.setFoodLevel(20);
-                                        player.setSaturation(20);
-                                        player.setFireTicks(0);
-                                        player.resetPlayerTime();
-                                        player.resetPlayerWeather();
-                                    }
-                                    PlayerStat pStats = PlayerStat.getPlayerStats(player);
-                                    if (pStats != null && MythicSkywars.getCfg().displayPlayerExeperience()) {
-                                        Util.get().setPlayerExperience(player, pStats.getXp());
-                                    }
-                                    if (MythicSkywars.get().isEnabled() && MythicSkywars.getCfg().lobbyBoardEnabled()) {
-                                        updateScoreboard(player, "lobbyboard");
-                                    }
-                                    if (MythicSkywars.getCfg().optionsMenuEnabled() && MythicSkywars.getCfg().isOptionsItemEnabled()) {
-                                        int optionSlot = MythicSkywars.getCfg().getOptionsSlot();
-                                        if (MythicSkywars.getCfg().joinMenuEnabled() && MythicSkywars.getCfg().isJoinGameItemEnabled() && player.hasPermission("sw.join")) {
-                                            int preferred = Math.min(8, MythicSkywars.getCfg().getJoinSlot() + 2);
-                                            optionSlot = preferred;
-                                        }
-                                        player.getInventory().setItem(optionSlot, MythicSkywars.getIM().getItem("optionselect"));
-                                    }
-                                    if (MythicSkywars.getCfg().joinMenuEnabled() && MythicSkywars.getCfg().isJoinGameItemEnabled() && player.hasPermission("sw.join")) {
-                                        player.getInventory().setItem(MythicSkywars.getCfg().getJoinSlot(), MythicSkywars.getIM().getItem("joinselect"));
-                                    }
-                                    if (MythicSkywars.getCfg().isStatsItemEnabled() && player.hasPermission("sw.stats")) {
-                                        player.getInventory().setItem(MythicSkywars.getCfg().getStatsItemPos(), MythicSkywars.getIM().getItem("statsitem"));
-                                    }
-                                    if (MythicSkywars.getCfg().isBungeeEnabled() && MythicSkywars.getCfg().isBackToLobbyItemEnabled()) {
-                                        player.getInventory().setItem(MythicSkywars.getCfg().getBackToLobbyPos(), MythicSkywars.getIM().getItem("backlobbyitem"));
-                                    }
-                                    if (!MythicSkywars.getCfg().bungeeMode() && MythicSkywars.getCfg().isSpectateGameItemEnabled() && MythicSkywars.getCfg().spectateMenuEnabled() && player.hasPermission("sw.spectate")) {
-                                        player.getInventory().setItem(MythicSkywars.getCfg().getSpectateSlot(), MythicSkywars.getIM().getItem("spectateselect"));
-                                    }
-                                    player.updateInventory();
-                                }
-                            }
-                        }.runTask(MythicSkywars.get());
-                    } else {
-                        this.cancel();
-                    }
-                } else {
-                    // TODO: Possible stackoverflow error (calls itself)
-                    updatePlayer(uuid);
-                }
+        if (MythicSkywars.get() == null || !MythicSkywars.get().isEnabled()) {
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(MythicSkywars.get(), () -> {
+            if (!MythicSkywars.get().isEnabled()) {
+                return;
             }
-        }.runTaskLaterAsynchronously(MythicSkywars.get(),  10L);
+            PlayerStat ps = PlayerStat.getPlayerStats(uuid);
+            if (ps == null) {
+                return;
+            }
+            Player player;
+            try {
+                player = Bukkit.getPlayer(UUID.fromString(uuid));
+            } catch (IllegalArgumentException ex) {
+                return;
+            }
+            if (player == null || !player.isOnline()) {
+                return;
+            }
+            if (!ps.isInitialized()) {
+                updatePlayer(uuid);
+                return;
+            }
+            applyLobbyJoinState(player);
+        }, 10L);
+    }
+
+    private static void applyLobbyJoinState(Player player) {
+        if (player == null || !player.isOnline() || !Util.get().isSpawnWorld(player.getWorld())) {
+            return;
+        }
+        MatchManager mm = MatchManager.get();
+        if (mm.getPlayerMap(player) != null || mm.getSpectatorMap(player) != null) {
+            return;
+        }
+        if (MythicSkywars.getCfg().isClearInventoryOnLobbyJoin()) {
+            player.getInventory().clear();
+        }
+        if (MythicSkywars.getCfg().protectLobby()) {
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setHealth(20);
+            player.setFoodLevel(20);
+            player.setSaturation(20);
+            player.setFireTicks(0);
+            player.resetPlayerTime();
+            player.resetPlayerWeather();
+        }
+        PlayerStat pStats = PlayerStat.getPlayerStats(player);
+        if (pStats != null && MythicSkywars.getCfg().displayPlayerExeperience()) {
+            Util.get().setPlayerExperience(player, pStats.getXp());
+        }
+        if (MythicSkywars.get().isEnabled() && MythicSkywars.getCfg().lobbyBoardEnabled()) {
+            updateScoreboard(player, "lobbyboard");
+        }
+        if (MythicSkywars.getCfg().optionsMenuEnabled() && MythicSkywars.getCfg().isOptionsItemEnabled()) {
+            int optionSlot = MythicSkywars.getCfg().getOptionsSlot();
+            if (MythicSkywars.getCfg().joinMenuEnabled() && MythicSkywars.getCfg().isJoinGameItemEnabled() && player.hasPermission("sw.join")) {
+                int preferred = Math.min(8, MythicSkywars.getCfg().getJoinSlot() + 2);
+                optionSlot = preferred;
+            }
+            player.getInventory().setItem(optionSlot, MythicSkywars.getIM().getItem("optionselect"));
+        }
+        if (MythicSkywars.getCfg().joinMenuEnabled() && MythicSkywars.getCfg().isJoinGameItemEnabled() && player.hasPermission("sw.join")) {
+            player.getInventory().setItem(MythicSkywars.getCfg().getJoinSlot(), MythicSkywars.getIM().getItem("joinselect"));
+        }
+        if (MythicSkywars.getCfg().isStatsItemEnabled() && player.hasPermission("sw.stats")) {
+            player.getInventory().setItem(MythicSkywars.getCfg().getStatsItemPos(), MythicSkywars.getIM().getItem("statsitem"));
+        }
+        if (MythicSkywars.getCfg().isBungeeEnabled() && MythicSkywars.getCfg().isBackToLobbyItemEnabled()) {
+            player.getInventory().setItem(MythicSkywars.getCfg().getBackToLobbyPos(), MythicSkywars.getIM().getItem("backlobbyitem"));
+        }
+        if (!MythicSkywars.getCfg().bungeeMode() && MythicSkywars.getCfg().isSpectateGameItemEnabled() && MythicSkywars.getCfg().spectateMenuEnabled() && player.hasPermission("sw.spectate")) {
+            player.getInventory().setItem(MythicSkywars.getCfg().getSpectateSlot(), MythicSkywars.getIM().getItem("spectateselect"));
+        }
+        player.updateInventory();
     }
 
     public static ArrayList<PlayerStat> getPlayers() {
@@ -219,37 +250,89 @@ public class PlayerStat {
     }
 
     public static void updateScoreboard(Player player, String identifier) {
-        if (identifier == null || identifier.isEmpty())
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (identifier == null || identifier.isEmpty()) {
             identifier = "lobbyboard";
-        MythicSkywarsBoard scoreboard = scoreboards.get(player);
-
-        List<String> lines = MythicSkywars.getMessaging().getFile().getStringList("scoreboards."+identifier+".lines");
+        }
+        List<String> lines;
+        try {
+            lines = MythicSkywars.getMessaging().getFile().getStringList("scoreboards." + identifier + ".lines");
+        } catch (Exception ex) {
+            return;
+        }
+        if (lines == null || lines.isEmpty()) {
+            return;
+        }
 
         ArrayList<String> scores = new ArrayList<>();
         for (int i = 1; i < lines.size(); i++) {
-            String s = ChatColor.translateAlternateColorCodes('&', getScoreboardLine(lines.get(i), player, identifier));
-            if (!ChatColor.stripColor(s).contains("remove")) {
-                scores.add(s);
+            String raw = lines.get(i);
+            if (raw == null) {
+                continue;
+            }
+            String formatted;
+            try {
+                formatted = ChatColor.translateAlternateColorCodes('&', getScoreboardLine(raw, player, identifier));
+            } catch (Exception ex) {
+                formatted = "";
+            }
+            if (formatted == null) {
+                formatted = "";
+            }
+            if (!ChatColor.stripColor(formatted).contains("remove")) {
+                scores.add(formatted);
+            }
+        }
+        if (scores.size() > 15) {
+            scores.subList(15, scores.size()).clear();
+        }
+        if (scores.isEmpty()) {
+            return;
+        }
+
+        MythicSkywarsBoard existing = scoreboards.get(player);
+        String title = safeTitle(lines.get(0));
+        if (existing != null && existing.getLinecount() == scores.size()) {
+            try {
+                existing.setTitle(title);
+                for (int i = 0; i < scores.size(); i++) {
+                    String line = scores.get(i);
+                    if (!existing.getLine(i).equals(line)) {
+                        existing.setLine(i, line);
+                    }
+                }
+                return;
+            } catch (Exception ex) {
+                MythicSkywars.get().getLogger().warning("Rebuilding scoreboard for " + player.getName() + ": " + ex.getMessage());
             }
         }
 
-        if (scoreboard == null || scoreboard.getLinecount() != scores.size()) {
-            resetScoreboard(player);
-            scoreboard = null;
-        }
-
-        if (scoreboard == null) {
-            scoreboard =  new MythicSkywarsBoard(player, scores.size());
-            scoreboards.put(player, scoreboard);
-        }
-        scoreboard.setTitle(ChatColor.translateAlternateColorCodes('&', lines.get(0)));
-        for (int i=0; i< scores.size();i++) {
-            String line = scores.get(i);
-            if (!scoreboard.getLine(i).equals(line)) {
-                scoreboard.setLine(i, line);
+        MythicSkywarsBoard next;
+        try {
+            next = new MythicSkywarsBoard(player, scores.size());
+            next.setTitle(title);
+            for (int i = 0; i < scores.size(); i++) {
+                next.setLine(i, scores.get(i));
             }
+        } catch (Exception ex) {
+            MythicSkywars.get().getLogger().warning("Could not update scoreboard for " + player.getName() + ": " + ex.getMessage());
+            if (existing != null && existing.board != null) {
+                player.setScoreboard(existing.board);
+            }
+            return;
         }
+        resetScoreboard(player);
+        scoreboards.put(player, next);
+    }
 
+    private static String safeTitle(String raw) {
+        String title = ChatColor.translateAlternateColorCodes('&', raw == null ? "" : raw);
+        if (title.length() > 32) {
+            title = title.substring(0, 32);
+        }
+        return title;
     }
 
     private static String getScoreboardLine(String line, Player player, String identifier) {
@@ -257,16 +340,8 @@ public class PlayerStat {
         String killdeath;
         String winloss;
         if (ps != null) {
-            if (ps.getWins() == 0) {
-                winloss = "0.00";
-            } else {
-                winloss = String.format("%1$,.2f", ((double) ((double) ps.getWins() / (double) ps.getLosses())));
-            }
-            if (ps.getKills() == 0) {
-                killdeath = "0.00";
-            } else {
-                killdeath = String.format("%1$,.2f", ((double) ((double) ps.getKills() / (double) ps.getDeaths())));
-            }
+            winloss = formatRatio(ps.getWins(), ps.getLosses());
+            killdeath = formatRatio(ps.getKills(), ps.getDeaths());
 
             GameMap gMap = MatchManager.get().getPlayerMap(player);
             if (identifier.equals("lobbyboard") || gMap == null) {
@@ -343,11 +418,11 @@ public class PlayerStat {
                         .replace("{winner7}", MythicSkywars.getCfg().usePlayerNames() ? getWinnerName(gMap,6) : "remove")
                         .replace("{winner8}", MythicSkywars.getCfg().usePlayerNames() ? getWinnerName(gMap,7) : "remove")
                         .replace("{restarttime}", "" + gMap.getGameBoard().getRestartTimer())
-                        .replace("{chestvote}", ChatColor.stripColor(gMap.getCurrentChest()))
-                        .replace("{timevote}", ChatColor.stripColor(gMap.getCurrentTime()))
-                        .replace("{healthvote}", ChatColor.stripColor(gMap.getCurrentHealth()))
-                        .replace("{weathervote}", ChatColor.stripColor(gMap.getCurrentWeather()))
-                        .replace("{modifiervote}", ChatColor.stripColor(gMap.getCurrentModifier()));
+                        .replace("{chestvote}", ChatColor.stripColor(safeText(gMap.getCurrentChest())))
+                        .replace("{timevote}", ChatColor.stripColor(safeText(gMap.getCurrentTime())))
+                        .replace("{healthvote}", ChatColor.stripColor(safeText(gMap.getCurrentHealth())))
+                        .replace("{weathervote}", ChatColor.stripColor(safeText(gMap.getCurrentWeather())))
+                        .replace("{modifiervote}", ChatColor.stripColor(safeText(gMap.getCurrentModifier())));
                 if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
                     formatted = PlaceholderAPI.setPlaceholders(player, formatted);
                 }
@@ -368,6 +443,17 @@ public class PlayerStat {
             return gMap.getWinningTeam().getTeamName();
         }
         return "invalid";
+    }
+
+    private static String formatRatio(int numerator, int denominator) {
+        if (numerator <= 0 || denominator <= 0) {
+            return "0.00";
+        }
+        return String.format("%1$,.2f", (double) numerator / (double) denominator);
+    }
+
+    private static String safeText(String value) {
+        return value == null ? "" : value;
     }
 
     private static double getBalance(Player player) {
@@ -478,6 +564,7 @@ public class PlayerStat {
         this.xp = Math.max(0, this.xp + delta);
         if (onlinePlayer != null && this.xp > oldXp) {
             LevelManager.get().grantLevelUpRewards(onlinePlayer, oldXp, this.xp);
+            systems.mythical.mythicskywars.addons.SkywarsAchievements.levels(onlinePlayer);
         }
     }
 

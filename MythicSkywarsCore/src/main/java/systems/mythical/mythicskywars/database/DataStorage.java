@@ -136,6 +136,7 @@ public class DataStorage {
         new BukkitRunnable() {
             @Override
             public void run() {
+                try {
                 boolean sqlEnabled = MythicSkywars.get().getConfig().getBoolean("sqldatabase.enabled");
                 sqlEnabled = sqlEnabled && isSqlEnabledAndAvailable();
                 if (sqlEnabled) {
@@ -253,6 +254,11 @@ public class DataStorage {
                         applyBlankStatDefaults(pData);
                     }
                 }
+                } catch (Exception ex) {
+                    MythicSkywars.get().getLogger().severe("Failed to load stats for " + pData.getPlayerName()
+                            + ": " + ex.getMessage());
+                    applyBlankStatDefaults(pData);
+                }
                 // Always finish on the main thread so initialized flags and join logic see a consistent state.
                 new BukkitRunnable() {
                     @Override
@@ -301,25 +307,16 @@ public class DataStorage {
     }
 
     private String resolvePlayerName(String uuid, String fallbackOne, String fallbackTwo) {
-        try {
-            UUID id = UUID.fromString(uuid);
-            Player online = Bukkit.getPlayer(id);
-            if (online != null && online.getName() != null) {
-                return online.getName();
-            }
-            OfflinePlayer offline = Bukkit.getOfflinePlayer(id);
-            if (offline != null && offline.getName() != null) {
-                return offline.getName();
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        if (fallbackOne != null && !fallbackOne.trim().isEmpty()) {
+        // This runs off the main thread. Do not call Bukkit player lookups here:
+        // on 1.8 that can throw or stall the load, so the player stays uninitialized
+        // until some later game-join attempt fetches them again.
+        if (fallbackOne != null && !fallbackOne.trim().isEmpty() && !"null".equalsIgnoreCase(fallbackOne.trim())) {
             return fallbackOne;
         }
-        if (fallbackTwo != null && !fallbackTwo.trim().isEmpty()) {
+        if (fallbackTwo != null && !fallbackTwo.trim().isEmpty() && !"null".equalsIgnoreCase(fallbackTwo.trim())) {
             return fallbackTwo;
         }
-        return null;
+        return uuid;
     }
 
     private void migrateLegacyNameFileIfNeeded(File playerDataDirectory, PlayerStat pData, File uuidFile) {

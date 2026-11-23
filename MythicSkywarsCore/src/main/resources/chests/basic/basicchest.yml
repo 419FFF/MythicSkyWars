@@ -1,33 +1,33 @@
 chestItems:
-  '100':
+  '55':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: WOOD
-      amount: 12
-  '45':
-    items:
-    - ==: org.bukkit.inventory.ItemStack
-      type: STONE
-      amount: 23
-  '40':
+      amount: 7
+  '32':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: FISHING_ROD
-  '35':
+  '28':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: GOLDEN_APPLE
       amount: 1
     - ==: org.bukkit.inventory.ItemStack
       type: COOKED_BEEF
-      amount: 8
+      amount: 6
     - ==: org.bukkit.inventory.ItemStack
       type: APPLE
-      amount: 3
+      amount: 2
     - ==: org.bukkit.inventory.ItemStack
       type: EGG
-      amount: 6
-  '30':
+      amount: 5
+  '25':
+    items:
+    - ==: org.bukkit.inventory.ItemStack
+      type: STONE
+      amount: 14
+  '24':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: STONE_AXE
@@ -36,7 +36,7 @@ chestItems:
         meta-type: UNSPECIFIC
         enchants:
           DIG_SPEED: 1
-  '25':
+  '20':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: LEATHER_CHESTPLATE
@@ -48,18 +48,18 @@ chestItems:
       type: IRON_CHESTPLATE
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_HELMET
-  '20':
+  '16':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_SWORD
-  '15':
+  '12':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: ARROW
-      amount: 3
+      amount: 2
     - ==: org.bukkit.inventory.ItemStack
       type: WOOD_SWORD
-  '10':
+  '8':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_AXE
@@ -70,7 +70,7 @@ chestItems:
         meta-type: UNSPECIFIC
         enchants:
           DIG_SPEED: 1
-  '5':
+  '4':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_AXE

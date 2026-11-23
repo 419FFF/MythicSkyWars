@@ -102,6 +102,9 @@ MythicSkyWars is designed for both standalone servers and large proxy networks. 
 
 ---
 
+### Recent fork updates
+
+The current changes also add the `/sw lobbybuild` admin toggle (aliases `/sw build` and `/sw bypasslobbyslots`) for temporary creative building and inventory access in the lobby. The permission is `sw.bypasslobbyslots`; the mode is restored when the player leaves the world, disconnects, or the plugin disables. Recent maintenance also updates match admission and cleanup, player-stat handling, lobby bypass behavior, map restoration and shrinking-border behavior, and the 1.8 NMS implementation. Chest loot, levels, messages, and game-event defaults have also been revised.
 ## 📦 Supported Versions
 
 | Minecraft | NMS Module |
@@ -435,3 +438,7 @@ deploy-to-nexus.ps1     Upload BuildTools artifacts to Nexus
 ## 📜 License
 
 This project originates from MythicSkywars. All original code remains under its respective license. New modifications and additions are maintained independently by the Mythical team.
+
+### Admin lobby building
+
+Use `/sw lobbybuild` (aliases: `/sw build`, `/sw bypasslobbyslots`) in the SkyWars lobby to toggle creative building and inventory access. Requires `sw.bypasslobbyslots`, granted to operators and `sw.admin`. Run it again to restore your previous game mode. The toggle clears when you change worlds, disconnect, or the plugin disables. Other plugins' region protections still apply.

@@ -42,6 +42,9 @@ public class ShrinkingBorderEvent extends MatchEvent {
             this.length = fc.getInt("events." + eventName + ".length");
             this.chance = fc.getInt("events." + eventName + ".chance");
             this.title = fc.getString("events." + eventName + ".title");
+            if (this.title == null || this.title.trim().isEmpty() || "ShrinkingBorderEvent".equals(this.title.trim())) {
+                this.title = "Border shrinks in:";
+            }
             this.subtitle = fc.getString("events." + eventName + ".subtitle");
             this.startMessage = fc.getString("events." + eventName + ".startMessage");
             this.endMessage = fc.getString("events." + eventName + ".endMessage");

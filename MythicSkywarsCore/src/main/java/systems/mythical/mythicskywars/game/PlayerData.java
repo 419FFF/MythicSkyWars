@@ -143,11 +143,12 @@ public class PlayerData {
                 sendToLobby(restoreInstantly);
             }
 
-            // Reset scoreboard
+            // The game board unregisters the snapshot taken at teleport, so rebuild the lobby board.
             PlayerStat.resetScoreboard(player);
-            player.setScoreboard(sbBeforeGame);
             if (MythicSkywars.getCfg().lobbyBoardEnabled() && !MythicSkywars.getCfg().bungeeMode()) {
                 PlayerStat.updateScoreboard(player, "lobbyboard");
+            } else if (sbBeforeGame != null) {
+                player.setScoreboard(sbBeforeGame);
             }
 
             if (MythicSkywars.getCfg().debugEnabled()) {

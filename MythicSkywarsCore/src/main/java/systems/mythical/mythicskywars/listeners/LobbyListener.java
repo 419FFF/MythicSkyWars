@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 
@@ -104,12 +105,18 @@ public class LobbyListener implements org.bukkit.event.Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent e) {
+        LobbyBypassManager.disable(e.getPlayer());
         if ((MythicSkywars.getCfg().bungeeMode() && !MythicSkywars.getCfg().isLobbyServer())
                 || (MythicSkywars.getCfg().isLobbyHideJoinQuitMessages() && Util.get().isSpawnWorld(e.getPlayer().getWorld()))) {
             e.setQuitMessage("");
         }
     }
 
+
+    @EventHandler
+    public void onLeaveLobby(PlayerChangedWorldEvent e) {
+        LobbyBypassManager.disable(e.getPlayer());
+    }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
@@ -367,6 +374,7 @@ public class LobbyListener implements org.bukkit.event.Listener {
 
     @EventHandler
     public void onPressurePlate(PlayerInteractEvent e) {
+        if (LobbyBypassManager.hasBypass(e.getPlayer())) return;
         if (Util.get().isSpawnWorld(e.getPlayer().getWorld())) {
             Player player = e.getPlayer();
             GameMap gMap = MatchManager.get().getPlayerMap(player);
@@ -385,7 +393,6 @@ public class LobbyListener implements org.bukkit.event.Listener {
                         if (party != null) {
                             if (party.getLeader().equals(player.getUniqueId())) {
                                 boolean tryJoin = true;
-                                boolean statsPending = false;
                                 for (UUID uuid : party.getMembers()) {
                                     if (Util.get().isBusy(uuid)) {
                                         tryJoin = false;
@@ -393,15 +400,9 @@ public class LobbyListener implements org.bukkit.event.Listener {
                                         if (member != null) {
                                             party.sendPartyMessage(new Messaging.MessageFormatter().setVariable("player", member.getName()).format("party.memberbusy"));
                                         }
-                                    } else if (!Util.get().isStatsReady(uuid)) {
-                                        tryJoin = false;
-                                        statsPending = true;
                                     }
                                 }
                                 if (!tryJoin) {
-                                    if (statsPending) {
-                                        player.sendMessage(new Messaging.MessageFormatter().format("error.send-stats-not-loaded"));
-                                    }
                                     break;
                                 }
                                 if (e.getClickedBlock().getType() == MythicSkywars.getNMS().getMaterial("STONE_PLATE").getType()) {
@@ -428,7 +429,7 @@ public class LobbyListener implements org.bukkit.event.Listener {
                         count++;
                     }
                     if (!joined) {
-                        player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join"));
+                        MatchManager.get().sendJoinFailed(player, "error.could-not-join");
                     }
                 } else {
                     e.getPlayer().sendMessage(new Messaging.MessageFormatter().format("error.nospawn"));

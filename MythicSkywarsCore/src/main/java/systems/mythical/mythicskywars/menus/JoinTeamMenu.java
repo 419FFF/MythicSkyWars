@@ -154,14 +154,14 @@ public class JoinTeamMenu {
                 return;
             }
             player.closeInventory();
-            if (MatchManager.get().joinGame(party, GameType.TEAM) == null) {
-                player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+            if (MatchManager.get().joinGame(party, GameType.TEAM) == null
+                    && MatchManager.get().sendJoinFailed(player, "error.could-not-join2")) {
                 Util.get().playSound(player, player.getLocation(), MythicSkywars.getCfg().getErrorSound(), 1, 1);
             }
         } else {
             player.closeInventory();
-            if (MatchManager.get().joinGame(player, GameType.TEAM) == null) {
-                player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+            if (MatchManager.get().joinGame(player, GameType.TEAM) == null
+                    && MatchManager.get().sendJoinFailed(player, "error.could-not-join2")) {
                 Util.get().playSound(player, player.getLocation(), MythicSkywars.getCfg().getErrorSound(), 1, 1);
             }
         }
@@ -482,7 +482,7 @@ public class JoinTeamMenu {
                             player.closeInventory();
                             joined = gMap.addPlayers(null, party);
                             if (!joined) {
-                                player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+                                MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
                             }
                         }
                         else if (server != null && server.canAddParty(party)) {
@@ -502,7 +502,7 @@ public class JoinTeamMenu {
                         player.closeInventory();
                         joined = gMap.addPlayers(null, player);
                         if (!joined) {
-                            player.sendMessage(new Messaging.MessageFormatter().format("error.could-not-join2"));
+                            MatchManager.get().sendJoinFailed(player, "error.could-not-join2");
                         }
                     }
                     else if (server != null && server.canAddPlayer()) {

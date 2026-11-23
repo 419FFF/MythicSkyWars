@@ -1,28 +1,28 @@
 chestItems:
-  '40':
+  '22':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: WOOD
-      amount: 12
-  '35':
-    items:
-    - ==: org.bukkit.inventory.ItemStack
-      type: WOOD
-      amount: 24
-    - ==: org.bukkit.inventory.ItemStack
-      type: STONE
-      amount: 27
-  '25':
+      amount: 7
+  '20':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: COOKED_BEEF
-      amount: 4
+      amount: 3
     - ==: org.bukkit.inventory.ItemStack
       type: GRILLED_PORK
-      amount: 9
+      amount: 7
     - ==: org.bukkit.inventory.ItemStack
       type: FISHING_ROD
-  '20':
+  '19':
+    items:
+    - ==: org.bukkit.inventory.ItemStack
+      type: WOOD
+      amount: 14
+    - ==: org.bukkit.inventory.ItemStack
+      type: STONE
+      amount: 16
+  '16':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: IRON_SWORD
@@ -54,8 +54,8 @@ chestItems:
           PROTECTION_ENVIRONMENTAL: 1
     - ==: org.bukkit.inventory.ItemStack
       type: GOLDEN_APPLE
-      amount: 4
-  '15':
+      amount: 3
+  '12':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: DIAMOND_PICKAXE
@@ -75,17 +75,17 @@ chestItems:
       type: DIAMOND_SWORD
     - ==: org.bukkit.inventory.ItemStack
       type: ARROW
-      amount: 21
+      amount: 17
     - ==: org.bukkit.inventory.ItemStack
       type: ARROW
-      amount: 16
+      amount: 13
     - ==: org.bukkit.inventory.ItemStack
       type: GOLDEN_APPLE
-      amount: 3
+      amount: 2
     - ==: org.bukkit.inventory.ItemStack
       type: EGG
-      amount: 8
-  '10':
+      amount: 6
+  '8':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: POTION
@@ -132,7 +132,7 @@ chestItems:
         meta-type: UNSPECIFIC
         enchants:
           PROTECTION_ENVIRONMENTAL: 1
-  '5':
+  '4':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: POTION
@@ -141,7 +141,7 @@ chestItems:
       type: LAVA_BUCKET
     - ==: org.bukkit.inventory.ItemStack
       type: WATER_BUCKET
-  '3':
+  '2':
     items:
     - ==: org.bukkit.inventory.ItemStack
       type: BOW
